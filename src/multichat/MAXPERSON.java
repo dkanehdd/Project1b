@@ -1,5 +1,5 @@
 package multichat;
 
 public interface MAXPERSON {
-	int MAXPERSON=4;
+	int MAXPERSON=3;
 }

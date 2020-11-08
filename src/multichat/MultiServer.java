@@ -232,12 +232,10 @@ public class MultiServer {
 				
 				
 				//방금 접속한 클라이언트를 제외한 나머지에게 사용자의입장을 알려준다.
-				sendAllMsg("", name+"님이 입장하셧습니다.", "All");
 				
 					//현재 접속자의 정보를 HashMap에 저장한다.
 				list.add(name);
 				clientMap.put(name, out);
-				sendAllMsg(name, "서버와 연결되었습니다.", "Err");
 				personCnt++;
 				if(clientMap.size()>MAXPERSON.MAXPERSON) {
 						sendAllMsg(name, "접속자수가 초과되었습니다.", "Err");
@@ -246,6 +244,8 @@ public class MultiServer {
 					same=true;
 						return;
 				}
+				sendAllMsg(name, "서버와 연결되었습니다.", "Err");
+				sendAllMsg("", name+"님이 입장하셧습니다.", "All");
 				
 				
 				
@@ -386,9 +386,7 @@ public class MultiServer {
 							" ["+Thread.currentThread().getName()+"] 퇴장");
 					System.out.println("현재 접속자 수는"+clientMap.size()+"명 입니다.");
 				}
-				else {
-					same=false;
-				}
+				
 				try {
 					in.close();
 					out.close();

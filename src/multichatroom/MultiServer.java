@@ -113,14 +113,14 @@ public class MultiServer {
 		Iterator<String> it = clientMap.keySet().iterator();
 		
 		
-		Iterator<String> itr = list.iterator();
-		String list1="";
-		while(itr.hasNext()) {
-			String str = itr.next();
-			if(!name.equals(str)) {
-				list1+= str+"  ";
-			}
-		}
+//		Iterator<String> itr = list.iterator();
+//		String list1="";
+//		while(itr.hasNext()) {
+//			String str = itr.next();
+//			if(!name.equals(str)) {
+//				list1+= str+"  ";
+//			}
+//		}
 		//저장된 객체(클라이언트)의 갯수만큼 반복한다.
 		
 		if(room.equals("")) {
@@ -153,7 +153,7 @@ public class MultiServer {
 					}
 					else if(flag.equals("List")) {
 						if(name.equals(clientName)) {
-							it_out.println(URLEncoder.encode("※"+msg+"\n"+list1,"UTF-8"));
+							it_out.println(URLEncoder.encode("※"+msg+"\n","UTF-8"));
 						}
 					}
 					else {
@@ -176,6 +176,7 @@ public class MultiServer {
 			while(it.hasNext()) {
 				try {
 					
+					
 					String clientName = it.next();
 					PrintWriter it_out = 
 							(PrintWriter)clientMap.get(clientName);
@@ -186,7 +187,17 @@ public class MultiServer {
 							//컬렉션에 저장된 접속자명과 일치하는 경우 메세지 전송
 							it_out.println(URLEncoder.encode("귓속말 : "+msg, "UTF-8"));
 						}
-					}else {
+					}
+					else if(flag.equals("List")) {
+						if(name.equals(clientName)) {
+							String list1 = "";
+							for(int i=0 ; i<userlist.length ; i++) {
+								list1 += userlist[i]; 
+							}
+							it_out.println(URLEncoder.encode("※"+msg+"\n"+list1,"UTF-8"));
+						}
+					}
+					else {
 						for(int i=0 ; i<userlist.length ; i++) {
 							if(clientName.equals(userlist[i])) {
 								it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
@@ -232,12 +243,10 @@ public class MultiServer {
 			
 			String name = "";
 			String s = "";
-			String blockUser="";
 			try {
 				//클라이언트의 이름을 읽어와서 저장
 				name = in.readLine();
 				name = URLDecoder.decode(name, "UTF-8");
-				blockUser = name;
 				blockName=new HashMap<String, String>();
 				if(clientMap.containsKey(name)) {
 					same=true;
@@ -283,7 +292,6 @@ public class MultiServer {
 				//입력한 메세지는 모든 클라이언트에게 Echo된다.
 				while(in != null) {
 					
-					
 					try {
 					s=in.readLine();
 					s = URLDecoder.decode(s, "UTF-8");
@@ -301,8 +309,7 @@ public class MultiServer {
 //					catch (SQLIntegrityConstraintViolationException e) {
 //					}
 					System.out.println(name + " >> "+s);
-					if(roomName.containsKey(userRoom.get(name))) {
-						
+					if(roomName.containsKey(userRoom.get(name))) {///////////////////////대화방에 참여한후 명령어
 						
 						/*
 						클라이언트가 전송한 메세지가 명령어인지 판단한다.
@@ -332,9 +339,13 @@ public class MultiServer {
 								out.close();
 								socket.close();
 							}else if(strArr[0].equals("/fixto")) {
-								fixName.put(name, strArr[1]); 
-								fixUser.add(name);
-								sendAllMsg("", name, strArr[1]+"님에게 귓속말 시작", "Err");
+								if(userRoom.get(name).equals(userRoom.get(strArr[1]))) {
+									fixName.put(name, strArr[1]); 
+									fixUser.add(name);
+									sendAllMsg("", name, strArr[1]+"님에게 귓속말 시작", "Err");
+								}else {
+									sendAllMsg("", name, "귓속말할상대가 존재하지않습니다.", "Err");
+								}
 							}else if(strArr[0].equals("/unfixto")) {
 								fixName.remove(name);
 								fixUser.remove(name);
@@ -342,6 +353,10 @@ public class MultiServer {
 							}else if(strArr[0].equals("/list")) {
 								sendAllMsg("", name, "대화중인 사용자:", "List");
 							}else if(strArr[0].equals("/block")) {
+								if(!userRoom.get(name).equals(userRoom.get(strArr[1]))) {
+									sendAllMsg("", name, "블록할 상대가 없습니다.", "Err");
+									continue;
+								}
 								if(bnum>0) {
 									if(blockName.get(name)!=null) {
 									bnum--;
@@ -375,7 +390,6 @@ public class MultiServer {
 									}
 									sendAllMsg("", name, strArr[1]+"님의 대화차단을 해제합니다.", "Err");
 								}
-								
 							}else if(strArr[0].equals("/")) {
 								sendAllMsg("", name, "/to 대화명  -> 대화명에게 귓속말하기", "Err");
 								sendAllMsg("", name, "/fixto 대화명 -> 대화명에게 귓속말 고정하기", "Err");

@@ -42,6 +42,7 @@ public class MultiServer {
 	HashSet<String> fixUser=new HashSet<String>();
 	HashSet<String> list = new HashSet<String>();
 	HashMap<String, Integer> roomMax = new HashMap<String, Integer>();
+	HashMap<String, String> roomMaster = new HashMap<String, String>();
 	HashMap<String, String> roomPwd = new HashMap<String, String>();
 	HashMap<String, String> roomName = new HashMap<String, String>();
 	HashMap<String, String> userRoom = new HashMap<String, String>();
@@ -151,11 +152,6 @@ public class MultiServer {
 							it_out.println(URLEncoder.encode("※"+msg,"UTF-8"));
 						}
 					}
-					else if(flag.equals("List")) {
-						if(name.equals(clientName)) {
-							it_out.println(URLEncoder.encode("※"+msg+"\n","UTF-8"));
-						}
-					}
 					else {
 						//name의 유무에 따라 메세지와 알림창으로 나뉨
 						
@@ -192,17 +188,16 @@ public class MultiServer {
 						if(name.equals(clientName)) {
 							String list1 = "";
 							for(int i=0 ; i<userlist.length ; i++) {
-								list1 += userlist[i]; 
+								if(room.equals(userRoom.get(clientName))) {
+									list1 += userlist[i]+"   ";
+								}
 							}
 							it_out.println(URLEncoder.encode("※"+msg+"\n"+list1,"UTF-8"));
 						}
 					}
 					else {
-						for(int i=0 ; i<userlist.length ; i++) {
-							if(clientName.equals(userlist[i])) {
-								it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
-							}
-						}
+						if(room.equals(userRoom.get(clientName)))
+							it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
 					}
 				}
 				catch (Exception e) {
@@ -333,12 +328,7 @@ public class MultiServer {
 							if(strArr[0].equals("/to")) {
 								sendAllMsg(userRoom.get(name), strArr[1], msgContent, "One");
 							}
-							else if(strArr[0].equals("/boom")){
-								serverSocket.close();
-								in.close();
-								out.close();
-								socket.close();
-							}else if(strArr[0].equals("/fixto")) {
+							else if(strArr[0].equals("/fixto")) {
 								if(userRoom.get(name).equals(userRoom.get(strArr[1]))) {
 									fixName.put(name, strArr[1]); 
 									fixUser.add(name);
@@ -351,7 +341,7 @@ public class MultiServer {
 								fixUser.remove(name);
 								sendAllMsg("", name, "귓속말이 해제되었습니다.", "Err");
 							}else if(strArr[0].equals("/list")) {
-								sendAllMsg("", name, "대화중인 사용자:", "List");
+								sendAllMsg(userRoom.get(name), name, "대화중인 사용자:", "List");
 							}else if(strArr[0].equals("/block")) {
 								if(!userRoom.get(name).equals(userRoom.get(strArr[1]))) {
 									sendAllMsg("", name, "블록할 상대가 없습니다.", "Err");
@@ -398,6 +388,48 @@ public class MultiServer {
 								sendAllMsg("", name, "/unblock 대화명 -> 해당 대화명 대화차단 해제하기(대화명에 all을 입력하면 모든 대화차단 해제)", "Err");
 								sendAllMsg("", name, "/list -> 현재 대화중인 대화명 출력하기", "Err");
 							}
+							else if(strArr[0].equals("/redcard")) {
+								if(roomMaster.containsKey(name)) {
+									if(userRoom.get(name).equals(userRoom.get(strArr[1]))) {
+										sendAllMsg("", strArr[1], "강퇴 당하셨습니다.", "Err");
+										userRoom.remove(strArr[1]);
+										String r="";
+										String[] strA = roomName.get(userRoom.get(name)).split(" ");
+										for(int i=0 ; i<strA.length ; i++) {
+											if(strA[i].equals(strArr[1])){
+												strA[i]="";
+											}
+											r+=strA[i]+" ";
+										}
+										roomName.put(userRoom.get(name), r);
+									}
+									else {
+										sendAllMsg(userRoom.get(name), name, "강퇴할 대상이 없습니다", "Err");
+									}
+								}else {
+									sendAllMsg("", name, "강퇴 권한이 없습니다.", "Err");
+								}
+							}
+							else if(strArr[0].equals("/boom")) {
+								if(roomMaster.containsKey(name)) {
+									sendAllMsg(userRoom.get(name), name, "방 폭파~!!~!~!~!~!~!", "All");
+									roomMaster.remove(name);
+									roomName.remove(userRoom.get(name));
+									roomPwd.remove(userRoom.get(name));
+									Iterator<String> it = clientMap.keySet().iterator();
+									while(it.hasNext()) {
+										String clientName = it.next();
+										if(userRoom.get(name).equals(userRoom.get(clientName))
+												&&!name.equals(clientName)) {
+											userRoom.remove(clientName);
+										}
+									}
+									userRoom.remove(name);
+								}
+								else {
+									sendAllMsg("", name, "방 폭파권한이 없습니다.", "Err");
+								}
+							}
 							else {
 								sendAllMsg("", name, "명령어가 잘못되었습니다.", "Err");
 							}
@@ -413,13 +445,12 @@ public class MultiServer {
 							else {
 								sendAllMsg(userRoom.get(name), name, s, "All");
 							}
-							
 						}
-					}
+					}/////////////////////////////////////////////////////////////////////////////////////////대화방 참여 끝
 					else if(s.charAt(0)=='/') {
 						String[] strArr = s.split(" ");
 						if(strArr[0].equals("/makeroom")) {
-							if(roomMax.containsKey(strArr[1])) {
+							if(roomName.containsKey(strArr[1])) {
 								sendAllMsg("" ,name, "대화방명이 중복되었습니다. 다시입력하세요", "Err");
 								continue;
 							}
@@ -430,6 +461,7 @@ public class MultiServer {
 							else {
 								roomPwd.put(strArr[1], "0");
 							}
+							roomMaster.put(name, strArr[1]);
 							roomName.put(strArr[1], name);
 							userRoom.put(name, strArr[1]);
 							sendAllMsg("",name, "새로운 대화방이 생성되었습니다.", "Err");
@@ -456,7 +488,7 @@ public class MultiServer {
 								else {
 									sendAllMsg("", name, "대화방에 입장하셨습니다.", "Err");
 									sendAllMsg(strArr[1], name, "님이 입장하셨습니다.", "All");
-									u+=" "+name;
+									u += " "+name;
 									roomName.put(strArr[1], u);
 									userRoom.put(name, strArr[1]);
 								}
@@ -480,15 +512,20 @@ public class MultiServer {
 					}
 					else{
 							sendAllMsg("", name, "대화방에 입장후 입력해주세요.", "Err");
-						}
 					}
 					
-				
+					
+				}
+			
 			}
 			catch (UnsupportedEncodingException e) {
 			}
 			catch (ArrayIndexOutOfBoundsException e) {
-				System.out.println("예외");
+				System.out.println("Array 예외");
+			}
+			catch (NullPointerException e) {
+				System.out.println("널포인트");
+				e.printStackTrace();
 			}
 			catch (Exception e) {
 				System.out.println("예외:"+e);

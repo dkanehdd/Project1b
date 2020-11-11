@@ -46,6 +46,8 @@ public class MultiServer {
 	HashMap<String, String> roomPwd = new HashMap<String, String>();
 	HashMap<String, String> roomName = new HashMap<String, String>();
 	HashMap<String, String> userRoom = new HashMap<String, String>();
+	HashMap<String, String> gameRoom = new HashMap<String, String>();
+	HashMap<String, String> invite = new HashMap<String, String>();
 	boolean same=false;
 	int bnum = 0;
 	public MultiServer() {
@@ -304,6 +306,7 @@ public class MultiServer {
 //					catch (SQLIntegrityConstraintViolationException e) {
 //					}
 					System.out.println(name + " >> "+s);
+					
 					if(roomName.containsKey(userRoom.get(name))) {///////////////////////대화방에 참여한후 명령어
 						
 						/*
@@ -340,7 +343,7 @@ public class MultiServer {
 								fixName.remove(name);
 								fixUser.remove(name);
 								sendAllMsg("", name, "귓속말이 해제되었습니다.", "Err");
-							}else if(strArr[0].equals("/list")) {
+							}else if(strArr[0].equals("/myroomlist")) {
 								sendAllMsg(userRoom.get(name), name, "대화중인 사용자:", "List");
 							}else if(strArr[0].equals("/block")) {
 								if(!userRoom.get(name).equals(userRoom.get(strArr[1]))) {
@@ -429,6 +432,15 @@ public class MultiServer {
 								else {
 									sendAllMsg("", name, "방 폭파권한이 없습니다.", "Err");
 								}
+							}else if(strArr[0].equals("/invite")) {
+								if(clientMap.containsKey(strArr[1])&&!userRoom.containsKey(strArr[1])) {
+									sendAllMsg("", name, "초대장을 전송하였습니다.", "Err");
+									sendAllMsg("", strArr[1], name+"님으로부터 초대장이 왔습니다. 수락하시겠습니까? Y of N", "Err");
+									invite.put(strArr[1], userRoom.get(name));
+								}
+								else {
+									sendAllMsg("", name, "대상이 없거나, 다른대화방에서 대화중입니다.", "Err");
+								}
 							}
 							else {
 								sendAllMsg("", name, "명령어가 잘못되었습니다.", "Err");
@@ -486,11 +498,17 @@ public class MultiServer {
 									sendAllMsg("", name, "대화방의 인원수를 초과하였습니다.", "Err");
 								}
 								else {
-									sendAllMsg("", name, "대화방에 입장하셨습니다.", "Err");
-									sendAllMsg(strArr[1], name, "님이 입장하셨습니다.", "All");
 									u += " "+name;
 									roomName.put(strArr[1], u);
 									userRoom.put(name, strArr[1]);
+									if(gameRoom.containsKey(strArr[1])) {
+										sendAllMsg("", name, "게임방에 입장하셨습니다.", "Err");
+										sendAllMsg(strArr[1], name, "님이 입장하셨습니다.", "All");
+									}else {
+										sendAllMsg("", name, "대화방에 입장하셨습니다.", "Err");
+										sendAllMsg(strArr[1], name, "님이 입장하셨습니다.", "All");
+									}
+										
 								}
 							}else {
 								sendAllMsg("", name, "대화방명이 잘못되었습니다.", "Err");
@@ -508,15 +526,64 @@ public class MultiServer {
 									sendAllMsg("", name, "[비공개]"+key, "Err");
 								}
 							}
+						}else if(strArr[0].equals("/makegame")) {
+							if(roomName.containsKey(strArr[1])) {
+								sendAllMsg("" ,name, "대화방명이 중복되었습니다. 다시입력하세요", "Err");
+								continue;
+							}
+							roomMax.put(strArr[1], 2);
+							if(strArr.length==4) {
+								roomPwd.put(strArr[1], strArr[3]);
+							}
+							else {
+								roomPwd.put(strArr[1], "0");
+							}
+							roomMaster.put(name, strArr[1]);
+							roomName.put(strArr[1], name);
+							userRoom.put(name, strArr[1]);
+							gameRoom.put(strArr[1], name);
+							sendAllMsg("",name, "게임방이 생성되었습니다.", "Err");
+							TicTacToe.printGameBoard(TicTacToe.board);
+							while(true) {
+								TicTacToe.player1();
+								if(TicTacToe.gameover()==true) {
+									break;
+								}
+								TicTacToe.player2();
+								if(TicTacToe.gameover()==true) {
+									System.out.println("O 승리");
+									break;
+								}
+							}
+						}
+						else {
+							sendAllMsg("", name, "명령어가 잘못되었습니다.", "Err");
 						}
 					}
 					else{
+						if(invite.containsKey(name)) {
+							if(s.equalsIgnoreCase("Y")) {
+								String u = roomName.get(invite.get(name));
+								String[] user = roomName.get(invite.get(name)).split(" ");
+								if(roomMax.get(invite.get(name))==user.length) {
+									sendAllMsg("", name, "대화방의 인원수를 초과하였습니다.", "Err");
+								}
+								else {
+									sendAllMsg("", name, "대화방에 입장하셨습니다.", "Err");
+									sendAllMsg(invite.get(name), name, "님이 입장하셨습니다.", "All");
+									u += " "+name;
+									roomName.put(invite.get(name), u);
+									userRoom.put(name, invite.get(name));
+								}
+							}else {
+								sendAllMsg("", name, "초대를 거부하셨습니다.", "Err");
+							}
+							invite.remove(name);
+						}else {
 							sendAllMsg("", name, "대화방에 입장후 입력해주세요.", "Err");
+						}
 					}
-					
-					
 				}
-			
 			}
 			catch (UnsupportedEncodingException e) {
 			}
@@ -553,8 +620,6 @@ public class MultiServer {
 				catch (Exception e) {
 					e.printStackTrace();
 				}
-				
-				
 			}
 		}
 	}

@@ -48,6 +48,8 @@ public class MultiServer {
 	HashMap<String, String> userRoom = new HashMap<String, String>();
 	HashMap<String, String> gameRoom = new HashMap<String, String>();
 	HashMap<String, String> invite = new HashMap<String, String>();
+	char[][] board = {{' ',' ',' '},{' ',' ',' '},{' ',' ',' '}};
+	int gamecnt=0;
 	boolean same=false;
 	int bnum = 0;
 	public MultiServer() {
@@ -198,7 +200,36 @@ public class MultiServer {
 						}
 					}
 					else {
-						if(room.equals(userRoom.get(clientName)))
+						if(gameRoom.containsKey(room)&&flag.equals("Game")) {
+							String[] xy = msg.split(" ");
+							try {
+								int x = Integer.parseInt(xy[0]);
+								int y = Integer.parseInt(xy[1]);
+								if(gamecnt%2==1) {
+									board[x][y]='X';
+									for(int i=0 ; i<board.length ; i++) {
+										it_out.println(URLEncoder.encode(" "+board[i][0]+" ┃ "+board[i][1]+" ┃ "+board[i][2],"UTF-8"));
+										if(i<2) {
+											it_out.println(URLEncoder.encode("━━━╋━━━╋━━━","UTF-8"));
+										}
+									}
+								}
+								else {
+									board[x][y]='O';
+									for(int i=0 ; i<board.length ; i++) {
+										it_out.println(URLEncoder.encode(" "+board[i][0]+" ┃ "+board[i][1]+" ┃ "+board[i][2],"UTF-8"));
+										if(i<2) {
+											it_out.println(URLEncoder.encode("━━━╋━━━╋━━━","UTF-8"));
+										}
+									}
+								}
+								it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
+							}
+							catch (NumberFormatException e) {
+								it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
+							}
+						}
+						else if(room.equals(userRoom.get(clientName)))
 							it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
 					}
 				}
@@ -389,7 +420,10 @@ public class MultiServer {
 								sendAllMsg("", name, "/unfixto -> 귓속말 고정 해제하기", "Err");
 								sendAllMsg("", name, "/block 대화명 -> 대화명이 보내는 대화 차단하기", "Err");
 								sendAllMsg("", name, "/unblock 대화명 -> 해당 대화명 대화차단 해제하기(대화명에 all을 입력하면 모든 대화차단 해제)", "Err");
-								sendAllMsg("", name, "/list -> 현재 대화중인 대화명 출력하기", "Err");
+								sendAllMsg("", name, "/myroomlist -> 현재 대화중인 대화명 출력하기", "Err");
+								sendAllMsg("", name, "/outroom -> 대화방 나가기", "Err");
+								sendAllMsg("", name, "/invite '유저명' -> 초대장 보내기 (방장권한)", "Err");
+								sendAllMsg("", name, "/redcard '유저명' -> 강퇴하기 (방장권한)", "Err");
 							}
 							else if(strArr[0].equals("/redcard")) {
 								if(roomMaster.containsKey(name)) {
@@ -442,6 +476,28 @@ public class MultiServer {
 									sendAllMsg("", name, "대상이 없거나, 다른대화방에서 대화중입니다.", "Err");
 								}
 							}
+							else if(strArr[0].equals("/outroom")) {
+								if(roomMaster.containsKey(name)) {
+									sendAllMsg("", name, "방장은 퇴장하실수 없습니다.", "Err");
+								}
+								else {
+									sendAllMsg(userRoom.get(name), name, "님이 퇴장하셨습니다.", "All");
+									String r="";
+									String[] strA = roomName.get(userRoom.get(name)).split(" ");
+									for(int i=0 ; i<strA.length ; i++) {
+										if(strA[i].equals(name)){
+											strA[i]="";
+										}
+										if(i==0) {
+											r+=strA[i];
+										}else {
+											r+=" "+strA[i];
+										}
+									}
+									roomName.put(userRoom.get(name), r);
+									userRoom.remove(name);
+								}
+							}
 							else {
 								sendAllMsg("", name, "명령어가 잘못되었습니다.", "Err");
 							}
@@ -453,6 +509,25 @@ public class MultiServer {
 							}
 							if(fixUser.contains(name)) {
 								sendAllMsg(userRoom.get(name), fixName.get(name), s, "One");
+							}
+							else if(gameRoom.containsKey(userRoom.get(name))) {
+								String[] xy = s.split(" ");
+								try {
+									int x = Integer.parseInt(xy[0]);
+									int y = Integer.parseInt(xy[1]);
+									if(x>2||y>2||x<0||y<0) {
+										sendAllMsg(userRoom.get(name), name, "좌표입력이 잘못되었습니다.", "Game");
+									}else if(board[x][y]!=' ') {
+										sendAllMsg(userRoom.get(name), name, "좌표입력이 잘못되었습니다.", "Game");
+									}
+									else {
+										gamecnt++;
+										sendAllMsg(userRoom.get(name), name, s, "Game");
+									}
+								}
+								catch (NumberFormatException e) {
+									sendAllMsg(userRoom.get(name), name, s, "All");
+								}
 							}
 							else {
 								sendAllMsg(userRoom.get(name), name, s, "All");
@@ -504,6 +579,13 @@ public class MultiServer {
 									if(gameRoom.containsKey(strArr[1])) {
 										sendAllMsg("", name, "게임방에 입장하셨습니다.", "Err");
 										sendAllMsg(strArr[1], name, "님이 입장하셨습니다.", "All");
+										for(int i=0 ; i<board.length ; i++) {
+											sendAllMsg(strArr[1], " ", board[i][0]+" ┃"+board[i][1]+" ┃"+board[i][2], "All");
+											if(i<2) {
+												sendAllMsg(strArr[1], " ", "━━╋━━╋━━", "All");
+											}
+										}
+										sendAllMsg(strArr[1], "System", "좌표를 입력하세요"+gameRoom.get(strArr[1])+"님 차례", "All");
 									}else {
 										sendAllMsg("", name, "대화방에 입장하셨습니다.", "Err");
 										sendAllMsg(strArr[1], name, "님이 입장하셨습니다.", "All");
@@ -526,7 +608,7 @@ public class MultiServer {
 									sendAllMsg("", name, "[비공개]"+key, "Err");
 								}
 							}
-						}else if(strArr[0].equals("/makegame")) {
+						}else if(strArr[0].equals("/makegameroom")) {
 							if(roomName.containsKey(strArr[1])) {
 								sendAllMsg("" ,name, "대화방명이 중복되었습니다. 다시입력하세요", "Err");
 								continue;
@@ -543,18 +625,11 @@ public class MultiServer {
 							userRoom.put(name, strArr[1]);
 							gameRoom.put(strArr[1], name);
 							sendAllMsg("",name, "게임방이 생성되었습니다.", "Err");
-							TicTacToe.printGameBoard(TicTacToe.board);
-							while(true) {
-								TicTacToe.player1();
-								if(TicTacToe.gameover()==true) {
-									break;
-								}
-								TicTacToe.player2();
-								if(TicTacToe.gameover()==true) {
-									System.out.println("O 승리");
-									break;
-								}
-							}
+						}else if(strArr[0].equals("/")) {
+							sendAllMsg("", name, "/roomlist -> 대화방 목록보기", "Err");
+							sendAllMsg("", name, "/roomenter '대화방명' -> 대화방 입장하기", "Err");
+							sendAllMsg("", name, "/makeroom '대화방'-> 대화방 만들기", "Err");
+							sendAllMsg("", name, "/makegameroom '대화방'-> 1:1 게임방 만들기", "Err");
 						}
 						else {
 							sendAllMsg("", name, "명령어가 잘못되었습니다.", "Err");

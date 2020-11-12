@@ -181,6 +181,18 @@ public class MultiServer {
 					PrintWriter it_out = 
 							(PrintWriter)clientMap.get(clientName);
 					String[] userlist = roomName.get(room).split(" ");
+					boolean is =false;
+					if(bnum>0) {
+						if(blockName.containsKey(clientName)) {
+							String[] bArr = blockName.get(clientName).split(" ");
+							for(int i=0 ; i<bArr.length ; i++) {
+								if(bArr[i].equals(name)) {
+									is=true;
+								}
+							}
+						}
+					}
+					if(is==true) continue;
 					if(flag.equals("One")) {
 						//flag가 One이면 해당 클라이언트 한명에게만 전송
 						if(name.equals(clientName)) {
@@ -201,32 +213,43 @@ public class MultiServer {
 					}
 					else {
 						if(gameRoom.containsKey(room)&&flag.equals("Game")) {
-							String[] xy = msg.split(" ");
-							try {
-								int x = Integer.parseInt(xy[0]);
-								int y = Integer.parseInt(xy[1]);
-								if(gamecnt%2==1) {
-									board[x][y]='X';
-									for(int i=0 ; i<board.length ; i++) {
-										it_out.println(URLEncoder.encode(" "+board[i][0]+" ┃ "+board[i][1]+" ┃ "+board[i][2],"UTF-8"));
-										if(i<2) {
-											it_out.println(URLEncoder.encode("━━━╋━━━╋━━━","UTF-8"));
+							if(room.equals(userRoom.get(clientName))){
+								String[] xy = msg.split(" ");
+								try {
+									int x = Integer.parseInt(xy[0]);
+									int y = Integer.parseInt(xy[1]);
+									if(gamecnt==9) {
+										it_out.println(URLEncoder.encode("~무승부입니다~","UTF-8"));
+									}
+									else if(gamecnt%2==1) {
+										board[x][y]='X';
+										for(int i=0 ; i<board.length ; i++) {
+											it_out.println(URLEncoder.encode(" "+board[i][0]+" ┃ "+board[i][1]+" ┃ "+board[i][2],"UTF-8"));
+											if(i<2) {
+												it_out.println(URLEncoder.encode("━━━╋━━━╋━━━","UTF-8"));
+											}
+										}
+										if(TicTacToe.gameover(board)) {
+											it_out.println(URLEncoder.encode(name+"님 승리~!!","UTF-8"));
 										}
 									}
-								}
-								else {
-									board[x][y]='O';
-									for(int i=0 ; i<board.length ; i++) {
-										it_out.println(URLEncoder.encode(" "+board[i][0]+" ┃ "+board[i][1]+" ┃ "+board[i][2],"UTF-8"));
-										if(i<2) {
-											it_out.println(URLEncoder.encode("━━━╋━━━╋━━━","UTF-8"));
+									else {
+										board[x][y]='O';
+										for(int i=0 ; i<board.length ; i++) {
+											it_out.println(URLEncoder.encode(" "+board[i][0]+" ┃ "+board[i][1]+" ┃ "+board[i][2],"UTF-8"));
+											if(i<2) {
+												it_out.println(URLEncoder.encode("━━━╋━━━╋━━━","UTF-8"));
+											}
+										}
+										if(TicTacToe.gameover(board)) {
+											it_out.println(URLEncoder.encode(name+"님 승리~!!","UTF-8"));
 										}
 									}
+									it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
 								}
-								it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
-							}
-							catch (NumberFormatException e) {
-								it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
+								catch (NumberFormatException e) {
+									it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
+								}
 							}
 						}
 						else if(room.equals(userRoom.get(clientName)))

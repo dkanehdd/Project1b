@@ -49,6 +49,7 @@ public class MultiServer {
 	HashMap<String, String> gameRoom = new HashMap<String, String>();
 	HashMap<String, String> invite = new HashMap<String, String>();
 	char[][] board = {{' ',' ',' '},{' ',' ',' '},{' ',' ',' '}};
+	char[][] board1 = {{' ',' ',' '},{' ',' ',' '},{' ',' ',' '}};
 	int gamecnt=0;
 	boolean same=false;
 	int bnum = 0;
@@ -230,7 +231,11 @@ public class MultiServer {
 											}
 										}
 										if(TicTacToe.gameover(board)) {
+											gamecnt=0;
 											it_out.println(URLEncoder.encode(name+"님 승리~!!","UTF-8"));
+											board = board1;
+											gameRoom.remove(userRoom.get(name));
+											it_out.println(URLEncoder.encode("일반채팅방으로 전환되었습니다.","UTF-8"));
 										}
 									}
 									else {
@@ -242,7 +247,11 @@ public class MultiServer {
 											}
 										}
 										if(TicTacToe.gameover(board)) {
+											gamecnt=0;
 											it_out.println(URLEncoder.encode(name+"님 승리~!!","UTF-8"));
+											board = board1;
+											gameRoom.remove(userRoom.get(name));
+											it_out.println(URLEncoder.encode("일반채팅방으로 전환되었습니다.","UTF-8"));
 										}
 									}
 									it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
@@ -476,6 +485,7 @@ public class MultiServer {
 									roomMaster.remove(name);
 									roomName.remove(userRoom.get(name));
 									roomPwd.remove(userRoom.get(name));
+									gameRoom.remove(userRoom.get(name));
 									Iterator<String> it = clientMap.keySet().iterator();
 									while(it.hasNext()) {
 										String clientName = it.next();
@@ -520,6 +530,17 @@ public class MultiServer {
 									roomName.put(userRoom.get(name), r);
 									userRoom.remove(name);
 								}
+							}
+							else if(strArr[0].equals("/gamestart")) {
+								gameRoom.put(userRoom.get(name), name);
+								sendAllMsg(userRoom.get(name), "", "게임을 시작합니다.", "All");
+								for(int i=0 ; i<board.length ; i++) {
+									sendAllMsg(strArr[1], " ", board[i][0]+" ┃"+board[i][1]+" ┃"+board[i][2], "All");
+									if(i<2) {
+										sendAllMsg(strArr[1], " ", "━━╋━━╋━━", "All");
+									}
+								}
+								sendAllMsg(strArr[1], "System", "좌표를 입력하세요"+gameRoom.get(strArr[1])+"님 차례", "All");
 							}
 							else {
 								sendAllMsg("", name, "명령어가 잘못되었습니다.", "Err");
@@ -613,7 +634,6 @@ public class MultiServer {
 										sendAllMsg("", name, "대화방에 입장하셨습니다.", "Err");
 										sendAllMsg(strArr[1], name, "님이 입장하셨습니다.", "All");
 									}
-										
 								}
 							}else {
 								sendAllMsg("", name, "대화방명이 잘못되었습니다.", "Err");
@@ -703,11 +723,24 @@ public class MultiServer {
 				 */
 				if(same==false) {
 					clientMap.remove(name);
+					roomMaster.remove(name);
+					roomName.remove(userRoom.get(name));
+					roomPwd.remove(userRoom.get(name));
+					gameRoom.remove(userRoom.get(name));
 					sendAllMsg(userRoom.get(name), "", name+"님이 퇴장하셨습니다.","All");
 					//퇴장하는 클라이언트의 쓰레드명을 보여준다.
 					System.out.println(name+
 							" ["+Thread.currentThread().getName()+"] 퇴장");
 					System.out.println("현재 접속자 수는"+clientMap.size()+"명 입니다.");
+					Iterator<String> it = clientMap.keySet().iterator();
+					while(it.hasNext()) {
+						String clientName = it.next();
+						if(userRoom.get(name).equals(userRoom.get(clientName))
+								&&!name.equals(clientName)) {
+							userRoom.remove(clientName);
+						}
+					}
+					userRoom.remove(name);
 				}
 				
 				try {

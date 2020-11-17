@@ -127,6 +127,10 @@ public class MultiServer {
 //				list1+= str+"  ";
 //			}
 //		}
+		if(TicTacToe.gameover(board)) {
+			board=board1;
+			gameRoom.remove(userRoom.get(name));
+		}
 		//저장된 객체(클라이언트)의 갯수만큼 반복한다.
 		
 		if(room.equals("")) {
@@ -233,8 +237,6 @@ public class MultiServer {
 										if(TicTacToe.gameover(board)) {
 											gamecnt=0;
 											it_out.println(URLEncoder.encode(name+"님 승리~!!","UTF-8"));
-											board = board1;
-											gameRoom.remove(userRoom.get(name));
 											it_out.println(URLEncoder.encode("일반채팅방으로 전환되었습니다.","UTF-8"));
 										}
 									}
@@ -249,8 +251,6 @@ public class MultiServer {
 										if(TicTacToe.gameover(board)) {
 											gamecnt=0;
 											it_out.println(URLEncoder.encode(name+"님 승리~!!","UTF-8"));
-											board = board1;
-											gameRoom.remove(userRoom.get(name));
 											it_out.println(URLEncoder.encode("일반채팅방으로 전환되었습니다.","UTF-8"));
 										}
 									}
@@ -358,7 +358,7 @@ public class MultiServer {
 					}
 					catch (NullPointerException e) {
 					}
-					if(s==null) break;
+					if(s==null) s+=" ";
 //					try {
 //						String sql = "INSERT INTO chat_talking VALUES ( seq_chat.nextval,?,?, default)";
 //						psmt = con.prepareStatement(sql);

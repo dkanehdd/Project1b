@@ -47,10 +47,10 @@ public class MultiServer {
 	HashMap<String, String> roomName = new HashMap<String, String>();
 	HashMap<String, String> userRoom = new HashMap<String, String>();
 	HashMap<String, String> gameRoom = new HashMap<String, String>();
+	HashMap<String, Integer> gamecnt = new HashMap<String, Integer>();
 	HashMap<String, String> invite = new HashMap<String, String>();
 	char[][] board = {{' ',' ',' '},{' ',' ',' '},{' ',' ',' '}};
 	char[][] board1 = {{' ',' ',' '},{' ',' ',' '},{' ',' ',' '}};
-	int gamecnt=0;
 	boolean same=false;
 	int bnum = 0;
 	public MultiServer() {
@@ -127,10 +127,7 @@ public class MultiServer {
 //				list1+= str+"  ";
 //			}
 //		}
-		if(TicTacToe.gameover(board)) {
-			board=board1;
-			gameRoom.remove(userRoom.get(name));
-		}
+		
 		//저장된 객체(클라이언트)의 갯수만큼 반복한다.
 		
 		if(room.equals("")) {
@@ -216,28 +213,22 @@ public class MultiServer {
 							it_out.println(URLEncoder.encode("※"+msg+"\n"+list1,"UTF-8"));
 						}
 					}
-					else {
-						if(gameRoom.containsKey(room)&&flag.equals("Game")) {
+					else if(gameRoom.containsKey(room)&&flag.equals("Game")) {
 							if(room.equals(userRoom.get(clientName))){
 								String[] xy = msg.split(" ");
 								try {
 									int x = Integer.parseInt(xy[0]);
 									int y = Integer.parseInt(xy[1]);
-									if(gamecnt==9) {
+									if(gamecnt.get(room)==9) {
 										it_out.println(URLEncoder.encode("~무승부입니다~","UTF-8"));
 									}
-									else if(gamecnt%2==1) {
+									else if(gamecnt.get(room)%2==1) {
 										board[x][y]='X';
 										for(int i=0 ; i<board.length ; i++) {
 											it_out.println(URLEncoder.encode(" "+board[i][0]+" ┃ "+board[i][1]+" ┃ "+board[i][2],"UTF-8"));
 											if(i<2) {
 												it_out.println(URLEncoder.encode("━━━╋━━━╋━━━","UTF-8"));
 											}
-										}
-										if(TicTacToe.gameover(board)) {
-											gamecnt=0;
-											it_out.println(URLEncoder.encode(name+"님 승리~!!","UTF-8"));
-											it_out.println(URLEncoder.encode("일반채팅방으로 전환되었습니다.","UTF-8"));
 										}
 									}
 									else {
@@ -248,28 +239,24 @@ public class MultiServer {
 												it_out.println(URLEncoder.encode("━━━╋━━━╋━━━","UTF-8"));
 											}
 										}
-										if(TicTacToe.gameover(board)) {
-											gamecnt=0;
-											it_out.println(URLEncoder.encode(name+"님 승리~!!","UTF-8"));
-											it_out.println(URLEncoder.encode("일반채팅방으로 전환되었습니다.","UTF-8"));
-										}
 									}
-									it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
 								}
 								catch (NumberFormatException e) {
 									it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
 								}
 							}
-						}
-						else if(room.equals(userRoom.get(clientName)))
 							it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
+						}
+					else if(room.equals(userRoom.get(clientName)))
+						it_out.println(URLEncoder.encode("["+name+"]:"+msg,"UTF-8"));
 					}
-				}
+				
 				catch (Exception e) {
 					System.out.println("방에러");
 				}
 			}
 		}
+		
 	}
 	/*
 	내부클래스
@@ -535,12 +522,12 @@ public class MultiServer {
 								gameRoom.put(userRoom.get(name), name);
 								sendAllMsg(userRoom.get(name), "", "게임을 시작합니다.", "All");
 								for(int i=0 ; i<board.length ; i++) {
-									sendAllMsg(strArr[1], " ", board[i][0]+" ┃"+board[i][1]+" ┃"+board[i][2], "All");
+									sendAllMsg("", " ", board[i][0]+" ┃"+board[i][1]+" ┃"+board[i][2], "All");
 									if(i<2) {
-										sendAllMsg(strArr[1], " ", "━━╋━━╋━━", "All");
+										sendAllMsg("", " ", "━━╋━━╋━━", "All");
 									}
 								}
-								sendAllMsg(strArr[1], "System", "좌표를 입력하세요"+gameRoom.get(strArr[1])+"님 차례", "All");
+								sendAllMsg("", "System", "좌표를 입력하세요"+name+"님 차례", "All");
 							}
 							else {
 								sendAllMsg("", name, "명령어가 잘못되었습니다.", "Err");
@@ -559,23 +546,36 @@ public class MultiServer {
 								try {
 									int x = Integer.parseInt(xy[0]);
 									int y = Integer.parseInt(xy[1]);
+									int cnt = gamecnt.get(userRoom.get(name));
 									if(x>2||y>2||x<0||y<0) {
-										sendAllMsg(userRoom.get(name), name, "좌표입력이 잘못되었습니다.", "Game");
+										sendAllMsg("", name, "좌표입력이 잘못되었습니다.", "Game");
 									}else if(board[x][y]!=' ') {
-										sendAllMsg(userRoom.get(name), name, "좌표입력이 잘못되었습니다.", "Game");
+										sendAllMsg("", name, "좌표입력이 잘못되었습니다.", "Game");
 									}
 									else {
-										gamecnt++;
+										cnt++;
+										gamecnt.put(userRoom.get(name), cnt);
 										sendAllMsg(userRoom.get(name), name, s, "Game");
 									}
 								}
 								catch (NumberFormatException e) {
-									sendAllMsg(userRoom.get(name), name, s, "All");
+									sendAllMsg("", name, s, "All");
+								}
+								catch (ArrayIndexOutOfBoundsException e) {
+									sendAllMsg("", name, "좌표입력이 잘못되었습니다.", "Game");
+								}
+								catch (NullPointerException e) {
+									sendAllMsg("", name, "좌표입력이 잘못되었습니다.", "Game");
 								}
 							}
 							else {
 								sendAllMsg(userRoom.get(name), name, s, "All");
 							}
+						}
+						if(TicTacToe.gameover(board)) {
+							board=board1;
+							sendAllMsg(userRoom.get(name), "System", name+"님 승리!! 일반채팅방으로 전환됩니다.", "All");
+							gameRoom.remove(userRoom.get(name));
 						}
 					}/////////////////////////////////////////////////////////////////////////////////////////대화방 참여 끝
 					else if(s.charAt(0)=='/') {
@@ -629,6 +629,7 @@ public class MultiServer {
 												sendAllMsg(strArr[1], " ", "━━╋━━╋━━", "All");
 											}
 										}
+										gamecnt.put(strArr[1], 0);
 										sendAllMsg(strArr[1], "System", "좌표를 입력하세요"+gameRoom.get(strArr[1])+"님 차례", "All");
 									}else {
 										sendAllMsg("", name, "대화방에 입장하셨습니다.", "Err");
